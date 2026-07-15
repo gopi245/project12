@@ -33,7 +33,7 @@ def handle_transcription():
         # యూజర్ ఏమీ మాట్లాడకపోతే
         response = VoiceResponse()
         response.say("క్షమించండి, నాకు వినిపించలేదు. ఇంకేమైనా అడగాలనుకుంటున్నారా?", voice='alice', language='te-IN')
-        response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto', language='te-IN')
+        response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto')
         return str(response)
  
     # Gemini నుండి రెస్పాన్స్ పొందడం
@@ -48,7 +48,7 @@ def handle_transcription():
     response.say(bot_answer, voice='alice', language='te-IN')
     
     # మళ్ళీ యూజర్ ని అడగడానికి gather
-    response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto', language='te-IN')
+    response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto')
     
     return str(response)
  
