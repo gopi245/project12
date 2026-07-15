@@ -1,65 +1,56 @@
 import os
-import httpx # Idi import cheyyandi
-import requests
+import google.generativeai as genai
 from flask import Flask, request
 from twilio.twiml.voice_response import VoiceResponse
-from twilio.rest import Client
-from openai import OpenAI
-from dotenv import load_dotenv
- 
-# .env file load cheyyandi
-load_dotenv()
  
 app = Flask(__name__)
  
-# Credentials
-account_sid = 'ACfecde84f2d1572166557fa133164f1b0'
-auth_token = '4202027e0c6ac83a9dff3220fa17b355'
-client = Client(account_sid, auth_token)
+# Gemini API Configuration
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
  
-# OpenAI Client (SSL bypass tho)
-http_client = httpx.Client(verify=False)
-openai_client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    http_client=http_client
+# Model setup (Gemini 1.5 Flash - fast and cost-effective)
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction="నువ్వు ఒక సహాయకారిగా ఉండే బాట్ వి. యూజర్ అడిగే ప్రశ్నలకు ఎల్లప్పుడూ క్లుప్తంగా, మర్యాదగా తెలుగులోనే సమాధానం ఇవ్వు."
 )
  
 @app.route("/voice", methods=['POST'])
 def voice():
+    """కాల్ రాగానే ప్లే అయ్యే ఫస్ట్ మెసేజ్"""
     response = VoiceResponse()
-    response.say("Namaskaram. Sarathi AI ki swagatham. Dayachesi mee sandesham cheppandi.")
-    # Call cut ayyaka '/handle-transcription' ki pampistundi
-    response.record(max_length=30, transcribe=False, recording_status_callback='/handle-transcription')
+    response.say("హలో! నమస్కారం. నేను మీకు ఎలా సహాయపడగలను?", voice='alice', language='te-IN')
+    
+    # యూజర్ నుండి స్పీచ్ తీసుకోవడానికి gather
+    response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto', language='te-IN')
     return str(response)
  
 @app.route("/handle-transcription", methods=['POST'])
 def handle_transcription():
-    recording_url = request.form.get('RecordingUrl')
-    
-    # 1. Audio file download
-    audio_file_path = "recording.wav"
-    auth = (account_sid, auth_token)
-    response = requests.get(recording_url, auth=auth)
-    with open(audio_file_path, "wb") as f:
-        f.write(response.content)
+    """యూజర్ మాటలను ప్రాసెస్ చేసి ఆన్సర్ ఇచ్చే ఫంక్షన్"""
+    user_text = request.values.get('SpeechResult', '') # Twilio నుండి వచ్చే యూజర్ టెక్స్ట్
  
-    # 2. Whisper API dwara transcription
-    audio_file = open(audio_file_path, "rb")
-    transcript = openai_client.audio.transcriptions.create(
-        model="whisper-1",
-        file=audio_file,
-        language="te"
-    )
-    transcription_text = transcript.text
-    
-    # 3. WhatsApp ki pampadam
-    print(f"Telugu Text: {transcription_text}")
-    client.messages.create(
-        body=f"New Voice Message: {transcription_text}",
-        from_='whatsapp:+14155238886',
-        to='whatsapp:+919493918625'
-    )
-    return "OK", 200
+    if not user_text:
+        # యూజర్ ఏమీ మాట్లాడకపోతే
+        response = VoiceResponse()
+        response.say("క్షమించండి, నాకు వినిపించలేదు. ఇంకేమైనా అడగాలనుకుంటున్నారా?", voice='alice', language='te-IN')
+        response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto', language='te-IN')
+        return str(response)
  
-if __name__ == '__main__':
-    app.run(port=5000)
+    # Gemini నుండి రెస్పాన్స్ పొందడం
+    try:
+        gemini_response = model.generate_content(user_text)
+        bot_answer = gemini_response.text
+    except Exception as e:
+        bot_answer = "క్షమించండి, సాంకేతిక కారణాల వల్ల నేను సమాధానం ఇవ్వలేకపోతున్నాను."
+ 
+    # Twilio రెస్పాన్స్
+    response = VoiceResponse()
+    response.say(bot_answer, voice='alice', language='te-IN')
+    
+    # మళ్ళీ యూజర్ ని అడగడానికి gather
+    response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto', language='te-IN')
+    
+    return str(response)
+ 
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
