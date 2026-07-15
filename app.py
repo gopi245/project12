@@ -21,7 +21,7 @@ def voice():
     response.say("హలో! నమస్కారం. నేను మీకు ఎలా సహాయపడగలను?", voice='alice', language='te-IN')
     
     # యూజర్ నుండి స్పీచ్ తీసుకోవడానికి gather
-    response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto', language='te-IN')
+    response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto')
     return str(response)
  
 @app.route("/handle-transcription", methods=['POST'])
