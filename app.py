@@ -18,7 +18,7 @@ model = genai.GenerativeModel(
 def voice():
     """కాల్ రాగానే ప్లే అయ్యే ఫస్ట్ మెసేజ్"""
     response = VoiceResponse()
-    response.say("హలో! నమస్కారం. నేను మీకు ఎలా సహాయపడగలను?", voice='alice', language='te-IN')
+    response.say("హలో! నమస్కారం. నేను మీకు ఎలా సహాయపడగలను?")
     
     # యూజర్ నుండి స్పీచ్ తీసుకోవడానికి gather
     response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto')
@@ -32,7 +32,7 @@ def handle_transcription():
     if not user_text:
         # యూజర్ ఏమీ మాట్లాడకపోతే
         response = VoiceResponse()
-        response.say("క్షమించండి, నాకు వినిపించలేదు. ఇంకేమైనా అడగాలనుకుంటున్నారా?", voice='alice', language='te-IN')
+        response.say("క్షమించండి, నాకు వినిపించలేదు. ఇంకేమైనా అడగాలనుకుంటున్నారా?")
         response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto')
         return str(response)
  
@@ -45,7 +45,7 @@ def handle_transcription():
  
     # Twilio రెస్పాన్స్
     response = VoiceResponse()
-    response.say(bot_answer, voice='alice', language='te-IN')
+    response.say(bot_answer)
     
     # మళ్ళీ యూజర్ ని అడగడానికి gather
     response.gather(input='speech', action='/handle-transcription', timeout=3, speech_timeout='auto')
